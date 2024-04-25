@@ -6,10 +6,12 @@
 
 import UIKit
 
-fileprivate enum Hand {
-    static let paper: String = "🖐️"
-    static let rock: String = "✊"
-    static let scissor: String = "✌️"
+protocol GameViewDelegate: AnyObject {
+    func resetButton()
+    func playButton()
+    func selectRock()
+    func selectPaper()
+    func selectScissors()
 }
 
 class GameView: UIView {
@@ -18,23 +20,60 @@ class GameView: UIView {
     private let userHandLabel: UILabel = UILabel()
     private let resultLabel: UILabel = UILabel()
     private let currentWinLoseLabel: UILabel = UILabel()
+    weak var delegate: GameViewDelegate?
     
+    func setComputerHand(with card: Card?) {
+        if let card = card {
+            computerHandLabel.text = card.desc
+        } else {
+            computerHandLabel.text = ""
+        }
+    }
     
-    @objc private func touchUpNextButton() {
-        
+    func setUserHand(with card: Card?) {
+        if let card = card {
+            userHandLabel.text = card.desc
+        } else {
+            userHandLabel.text = ""
+        }
+    }
+    
+    func setCurrentWinLoseLabel(win: Int, lose: Int) {
+        currentWinLoseLabel.text = "\(win)승 \(lose)패"
+    }
+    
+    func setResultLabel(with text: String) {
+        resultLabel.text = text
     }
     
     @objc private func touchUpResetButton() {
-        
+        delegate?.resetButton()
+    }
+    
+    @objc private func touchUpPlayButton() {
+        delegate?.playButton()
+    }
+    
+    @objc private func touchUpPaperHand() {
+        setUserHand(with: Card.paper)
+        delegate?.selectPaper()
+    }
+    
+    @objc private func touchUpRockHand() {
+        setUserHand(with: Card.rock)
+        delegate?.selectRock()
+    }
+    
+    @objc private func touchUpScissorHand() {
+        setUserHand(with: Card.scissors)
+        delegate?.selectScissors()
     }
     
     private func initialSetup() {
         backgroundColor = .white
         
-        computerHandLabel.text = Hand.paper
-        userHandLabel.text = Hand.paper
-        resultLabel.text = "이겼습니다!"
-        currentWinLoseLabel.text = "0승 0무 0패"
+        resultLabel.text = ""
+        currentWinLoseLabel.text = "0승 0패"
         
         computerHandLabel.font = .systemFont(ofSize: 40)
         userHandLabel.font = .systemFont(ofSize: 40)
@@ -52,9 +91,6 @@ class GameView: UIView {
         let topClearView: UIView = UIView()
         topClearView.backgroundColor = .clear
         
-        let nextButton: UIButton = UIButton(type: .roundedRect)
-        nextButton.setTitle("NEXT", for: .normal)
-        nextButton.addTarget(self, action: #selector(touchUpNextButton), for: .touchUpInside)
         let resetButton: UIButton = UIButton(type: .roundedRect)
         resetButton.setTitle("RESET", for: .normal)
         resetButton.addTarget(self, action: #selector(touchUpResetButton), for: .touchUpInside)
@@ -87,15 +123,41 @@ class GameView: UIView {
         let middleBottomClearView: UIView = UIView()
         middleBottomClearView.backgroundColor = .clear
         
-        let buttonStackView: UIStackView = .init(arrangedSubviews: [nextButton, resetButton])
+        let buttonStackView: UIStackView = .init(arrangedSubviews: [resetButton])
         buttonStackView.axis = .horizontal
         buttonStackView.alignment = .center
         buttonStackView.distribution = .fillEqually
         
         let bottomClearView: UIView = UIView()
         bottomClearView.backgroundColor = .clear
+
+        let rockButton: UIButton = UIButton(type: .roundedRect)
+        rockButton.setTitle(Card.rock.desc, for: .normal)
+        rockButton.addTarget(self, action: #selector(touchUpRockHand), for: .touchUpInside)
         
-        let mainStackView: UIStackView = .init(arrangedSubviews: [topClearView, currentWinLoseLabel, middleTopClearView, handsStackView, resultLabel, middleBottomClearView, buttonStackView, bottomClearView])
+        let scissorButton: UIButton = UIButton(type: .roundedRect)
+        scissorButton.setTitle(Card.scissors.desc, for: .normal)
+        scissorButton.addTarget(self, action: #selector(touchUpScissorHand), for: .touchUpInside)
+        
+        let paperButton: UIButton = UIButton(type: .roundedRect)
+        paperButton.setTitle(Card.paper.desc, for: .normal)
+        paperButton.addTarget(self, action: #selector(touchUpPaperHand), for: .touchUpInside)
+        
+        let changeHandButtonStackView: UIStackView = .init(arrangedSubviews: [rockButton, scissorButton, paperButton])
+        changeHandButtonStackView.axis = .horizontal
+        changeHandButtonStackView.alignment = .center
+        changeHandButtonStackView.distribution = .fillEqually
+        
+        let playButton: UIButton = UIButton(type: .roundedRect)
+        playButton.setTitle("PLAY", for: .normal)
+        playButton.addTarget(self, action: #selector(touchUpPlayButton), for: .touchUpInside)
+        
+        let playButtonStackView: UIStackView = .init(arrangedSubviews: [playButton, changeHandButtonStackView])
+        playButtonStackView.axis = .horizontal
+        playButtonStackView.alignment = .center
+        playButtonStackView.distribution = .fillEqually
+        
+        let mainStackView: UIStackView = .init(arrangedSubviews: [topClearView, currentWinLoseLabel, middleTopClearView, handsStackView, resultLabel, middleBottomClearView, playButtonStackView, buttonStackView, bottomClearView])
         mainStackView.axis = .vertical
         mainStackView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -114,10 +176,11 @@ class GameView: UIView {
         ])
     }
     
-    init() {
+    init(delegate: GameViewDelegate) {
         super.init(frame: .zero)
         initialSetup()
         layViews()
+        self.delegate = delegate
     }
     
     required init?(coder: NSCoder) {

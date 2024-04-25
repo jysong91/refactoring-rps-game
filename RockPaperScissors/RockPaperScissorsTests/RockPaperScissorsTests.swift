@@ -20,23 +20,118 @@ final class RockPaperScissorsTests: XCTestCase {
         sut = nil
     }
     
-    /*
-     사용자와 컴퓨터의 가위 바위 보 게임입니다
-        사용자가 패를 선택하면 컴퓨터의 패는 임의의 패로 지정됩니다
-        현재 승/무/패 기록은 화면 중앙에 표시합니다
-        승/무/패 기록은 사용자 기준 승/무/패를 나타냅니다
-        삼세판 선승제로, 세 판을 먼저 이기는 쪽이 승리합니다
-        어느 한 쪽이 최종 승리하면 얼럿을 통해 승자를 표시하고 게임을 초기화합니다
-     */
+    func test_묵찌빠_한번_이긴이후_비겼을때_승리() {
+        //given
+        let user = User()
+        user.select(card: .paper)
+        user.isWinner = true
+        
+        let computer = Computer()
+        computer.select(card: .rock)
+        
+        //when
+        let cal = user.selectedCard!.rawValue - computer.selectedCard!.rawValue
+
+        if cal == 0 {
+            user.draw()
+            if let isWinner = user.isWinner {
+                if isWinner {
+                    user.win()
+                    return
+                }
+                if !isWinner {
+                    user.lose()
+                    return
+                }
+            }
+        }
+        if cal < 0 {
+            user.isWinner = false
+            return
+        }
+        if cal > 0 {
+            user.isWinner = true
+            return
+        }
+        if cal == -2 {
+            user.isWinner = true
+            return
+        }
+        if cal == 2 {
+            user.isWinner = false
+            return
+        }
+        
+        //then
+        XCTAssertEqual(user.winCount, 1)
+    }
     
-    /*
-     양쪽이 낸 패의 승패 판결을 위한 기능을 TDD로 구현합니다
-     해당 타입, 메서드를 구현해가며 지속적으로 리팩터링 합니다
-        삼세판을 이기면 승리하는 기능을 TDD로 구현합니다
-        삼세판이 끝나고 승패가 갈리면 초기화 하는 기능을 TDD로 구현합니다
-     성능에 유리한 코드로 작성하도록 노력합니다
-     기획의 변경에 대해서 최대한 열린 코드로 작성해봅니다
-     */
+    func test_묵찌빠_컴퓨터와_가위바위보단계_이길때() {
+        //given
+        let user = User()
+        user.select(card: .paper)
+        
+        let computer = Computer()
+        computer.select(card: .rock)
+        
+        //when
+        let cal = user.selectedCard!.rawValue - computer.selectedCard!.rawValue
+
+        if cal == 0 {
+            user.draw()
+            if let isWinner = user.isWinner {
+                if isWinner {
+                    user.win()
+                    return
+                }
+                if !isWinner {
+                    user.lose()
+                    return
+                }
+            }
+        }
+        if cal < 0 {
+            user.isWinner = false
+            return
+        }
+        if cal > 0 {
+            user.isWinner = true
+            return
+        }
+        if cal == -2 {
+            user.isWinner = true
+            return
+        }
+        if cal == 2 {
+            user.isWinner = false
+            return
+        }
+        
+        //then
+        XCTAssertTrue(user.isWinner!)
+    }
+    
+    func test_묵찌빠_패배한다음_비기면_패배() {
+        //given
+        let user = User()
+        user.lose()
+        user.draw()
+        
+        //when
+        //then
+        XCTAssertEqual(user.loseCount, 1)
+    }
+    
+    func test_묵찌빠_승리한다음_비기면_승리() {
+        //given
+        let user = User()
+        user.win()
+        user.draw()
+        
+        //when
+        //then
+        XCTAssertEqual(user.winCount, 1)
+    }
     
     func test_승패가_갈리면_초기화합니다_지는경우() {
         //given
@@ -53,7 +148,7 @@ final class RockPaperScissorsTests: XCTestCase {
         XCTAssertEqual(user.winCount, 0)
         XCTAssertEqual(user.drawCount, 0)
         XCTAssertEqual(user.loseCount, 0)
-        XCTAssertNil(user.isWinner)
+        XCTAssertNil(user.isFinalWinner)
     }
     
     func test_승패가_갈리면_초기화합니다_이기는경우() {
@@ -71,7 +166,7 @@ final class RockPaperScissorsTests: XCTestCase {
         XCTAssertEqual(user.winCount, 0)
         XCTAssertEqual(user.drawCount, 0)
         XCTAssertEqual(user.loseCount, 0)
-        XCTAssertNil(user.isWinner)
+        XCTAssertNil(user.isFinalWinner)
     }
     
     func test_세판_먼저_이기는_쪽이_승리합니다() {
@@ -83,7 +178,7 @@ final class RockPaperScissorsTests: XCTestCase {
         
         //when
         //then
-        XCTAssertTrue(user.isWinner!)
+        XCTAssertTrue(user.isFinalWinner!)
     }
     
     func test_승무패_기록_표시합니다() {
